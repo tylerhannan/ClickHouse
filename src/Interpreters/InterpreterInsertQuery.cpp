@@ -358,7 +358,7 @@ Chain InterpreterInsertQuery::buildSink(
     auto context_ptr = getContext();
 
     Chain out;
-->
+
     /// Keep a reference to the context to make sure it stays alive until the chain is executed and destroyed
     out.addInterpreterContext(context_ptr);
 
