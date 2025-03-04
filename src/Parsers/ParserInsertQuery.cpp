@@ -40,6 +40,7 @@ bool ParserInsertQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
     ParserKeyword s_select(Keyword::SELECT);
     ParserKeyword s_partition_by(Keyword::PARTITION_BY);
     ParserKeyword s_with(Keyword::WITH);
+    ParserKeyword s_and(Keyword::AND);
     ParserToken s_lparen(TokenType::OpeningRoundBracket);
     ParserToken s_rparen(TokenType::ClosingRoundBracket);
     ParserIdentifier name_p(true);
@@ -314,6 +315,29 @@ bool ParserInsertQuery::parseImpl(Pos & pos, ASTPtr & node, Expected & expected)
         query->children.push_back(select);
     if (settings_ast)
         query->children.push_back(settings_ast);
+
+    // Check for AND SELECT syntax
+    if (s_and.ignore(pos, expected))
+    {
+        if (s_select.ignore(pos, expected))
+        {
+            // "AND SELECT" is found, now parse the SELECT query
+            ParserSelectWithUnionQuery select_p;
+            ASTPtr returning_query;
+
+            if (!select_p.parse(pos, returning_query, expected))
+                return false;  // SELECT parsing failed
+
+            // Successfully parsed the returning SELECT query
+            query->returning_query = returning_query;
+            query->children.push_back(returning_query);
+        }
+        else
+        {
+            // "AND" was found but it wasn't followed by "SELECT"
+            return false;  // Syntax error
+        }
+    }
 
     return true;
 }

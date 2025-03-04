@@ -24,6 +24,7 @@ public:
     ASTPtr table_function;
     ASTPtr partition_by;
     ASTPtr settings_ast;
+    ASTPtr returning_query;
 
     ASTPtr select;
     ASTPtr infile;
@@ -66,6 +67,7 @@ public:
         if (select) { res->select = select->clone(); res->children.push_back(res->select); }
         if (infile) { res->infile = infile->clone(); res->children.push_back(res->infile); }
         if (compression) { res->compression = compression->clone(); res->children.push_back(res->compression); }
+        if (returning_query) { res->returning_query = returning_query->clone(); res->children.push_back(res->returning_query); }
 
         return res;
     }

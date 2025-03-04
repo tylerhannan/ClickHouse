@@ -358,7 +358,7 @@ Chain InterpreterInsertQuery::buildSink(
     auto context_ptr = getContext();
 
     Chain out;
-
+->
     /// Keep a reference to the context to make sure it stays alive until the chain is executed and destroyed
     out.addInterpreterContext(context_ptr);
 
@@ -871,6 +871,22 @@ BlockIO InterpreterInsertQuery::execute()
         res.pipeline.addStorageHolder(mv->getTargetTable());
 
     LOG_TEST(getLogger("InterpreterInsertQuery"), "Pipeline could use up to {} thread", res.pipeline.getNumThreads());
+
+    // Handling the "AND SELECT" queries
+    const auto * insert_query = query_ptr->as<ASTInsertQuery>();
+    if (insert_query->returning_query)
+    {
+        // First wait for the insert to complete
+        res.pipeline.complete();
+
+        // Now execute the SELECT query
+        InterpreterSelectWithUnionQuery interpreter_select(
+            insert_query->returning_query,
+            getContext(),
+            SelectQueryOptions());
+
+        return interpreter_select.execute();
+    }
 
     return res;
 }
